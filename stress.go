@@ -42,6 +42,7 @@ func getCommands() [] cli.Command {
 				context = c
 				runCpuLoad(sampleInterval, cpuload, duration, cpucore)
 			},
+			Usage: "load cpu , use --help for more options",
 			Flags: cpuLoadFlags,
 			Before: func(_ *cli.Context) error { return nil },
 		},
@@ -67,7 +68,8 @@ func runCpuLoad(sampleInterval time.Duration, cpuload float64, duration float64,
 func main(){
 	app := cli.NewApp()
 	app.Name = "Stress"
-  	app.Usage = "stress it baby!!"
+  	app.Usage = "tool to stress test  host !!"
 	app.Commands = getCommands()
+	app.Version = "0.0.1"
 	app.Run(os.Args)
 }
