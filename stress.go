@@ -40,7 +40,7 @@ func getCommands() [] cli.Command {
 			Name: "cpu",
 			Action: func(c *cli.Context) {
 				context = c
-				runCpuLoad(sampleInterval, cpuload, duration, cpucore)
+				runCpuLoader(sampleInterval, cpuload, duration, cpucore)
 			},
 			Usage: "load cpu , use --help for more options",
 			Flags: cpuLoadFlags,
@@ -51,17 +51,17 @@ func getCommands() [] cli.Command {
 	return commands
 }
 
-func runCpuLoad(sampleInterval time.Duration, cpuload float64, duration float64, cpu int) {
-	controller := utils.NewController(sampleInterval, cpuload)
-	monitor := utils.NewMonitor(float64(cpu), sampleInterval)
+func runCpuLoader(sampleInterval time.Duration, cpuload float64, duration float64, cpu int) {
+	controller := utils.NewCpuLoadController(sampleInterval, cpuload)
+	monitor := utils.NewCpuLoadMonitor(float64(cpu), sampleInterval)
 
-	actuator := utils.NewClosedLoopActuator(controller, monitor, time.Duration(duration))
-	utils.StartController(controller)
-	utils.StartMonitor(monitor)
+	actuator := utils.NewCpuLoadGenerator(controller, monitor, time.Duration(duration))
+	utils.StartCpuLoadController(controller)
+	utils.StartCpuMonitor(monitor)
 
-	utils.Run(actuator)
-	utils.StopController(controller)
-	utils.StartMonitor(monitor)
+	utils.RunCpuLoader(actuator)
+	utils.StopCpuLoadController(controller)
+	utils.StopCpuMonitor(monitor)
 
 }
 
