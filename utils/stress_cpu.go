@@ -1,16 +1,17 @@
 package utils
+
 import (
-	"time"
 	"os"
+	"time"
+
 	"github.com/shirou/gopsutil/process"
 )
 
-
 type CpuLoadGenerator struct {
 	controller *CpuLoadController
-	monitor *CpuLoadMonitor
-	duration time.Duration
-	startTime time.Time
+	monitor    *CpuLoadMonitor
+	duration   time.Duration
+	startTime  time.Time
 }
 
 type CpuLoadController struct {
@@ -24,67 +25,64 @@ type CpuLoadController struct {
 	integralError        float64
 	proportionalError    float64
 	lastSampledTime      time.Time
-
 }
 
 type CpuLoadMonitor struct {
 	samplingInterval time.Duration
-	sample	float64
-	cpu float64
-	running bool
-	alpha float64
-
+	sample           float64
+	cpu              float64
+	running          bool
+	alpha            float64
 }
 
-
 func NewCpuLoadGenerator(controller *CpuLoadController, monitor *CpuLoadMonitor, duration time.Duration) *CpuLoadGenerator {
-    return &CpuLoadGenerator{controller: controller, monitor:monitor,
-		duration: duration*time.Second, startTime: time.Now().Local()}
+	return &CpuLoadGenerator{controller: controller, monitor: monitor,
+		duration: duration * time.Second, startTime: time.Now().Local()}
 }
 
 func NewCpuLoadController(samplingInterval time.Duration, cpuTarget float64) *CpuLoadController {
 	return &CpuLoadController{
-		running: false,
-		samplingInterval: samplingInterval,
-		sleepTime: 0.0 * time.Millisecond,
-		cpuTarget: cpuTarget,
-		currentCPULoad: 0,
-		integralConstant: -1.0,
+		running:              false,
+		samplingInterval:     samplingInterval,
+		sleepTime:            0.0 * time.Millisecond,
+		cpuTarget:            cpuTarget,
+		currentCPULoad:       0,
+		integralConstant:     -1.0,
 		proportionalConstant: -0.5,
-		integralError: 0,
-		proportionalError: 0,
-		lastSampledTime: time.Now().Local()}
+		integralError:        0,
+		proportionalError:    0,
+		lastSampledTime:      time.Now().Local()}
 }
 
 func NewCpuLoadMonitor(cpu float64, interval time.Duration) *CpuLoadMonitor {
 	return &CpuLoadMonitor{
-		samplingInterval: interval ,
-		sample:	0,
-		cpu:	cpu,
-		running: false,
-		alpha: 0.1}
+		samplingInterval: interval,
+		sample:           0,
+		cpu:              cpu,
+		running:          false,
+		alpha:            0.1}
 }
 
 // Monitor
 
-func GetCPULoad(monitor *CpuLoadMonitor) float64{
+func GetCPULoad(monitor *CpuLoadMonitor) float64 {
 	return monitor.cpu
 }
 
-func StartCpuMonitor(monitor *CpuLoadMonitor){
+func StartCpuMonitor(monitor *CpuLoadMonitor) {
 	monitor.running = true
 	go runCpuMonitor(monitor)
 }
 
-func StopCpuMonitor(monitor *CpuLoadMonitor){
+func StopCpuMonitor(monitor *CpuLoadMonitor) {
 	monitor.running = false
 }
-func runCpuMonitor(monitor *CpuLoadMonitor){
+func runCpuMonitor(monitor *CpuLoadMonitor) {
 	pid := os.Getpid()
-	process,_ := process.NewProcess(int32(pid))
-	for monitor.running{
-		monitor.sample, _ = process.CPUPercent(0)
-		monitor.cpu = monitor.alpha * monitor.sample + (1-monitor.alpha)*monitor.cpu
+	process, _ := process.NewProcess(int32(pid))
+	for monitor.running {
+		monitor.sample, _ = process.CPUPercent()
+		monitor.cpu = monitor.alpha*monitor.sample + (1-monitor.alpha)*monitor.cpu
 		time.Sleep(monitor.samplingInterval)
 	}
 
@@ -92,11 +90,11 @@ func runCpuMonitor(monitor *CpuLoadMonitor){
 
 //Controller
 
-func GetSleepTime(controller *CpuLoadController) time.Duration{
+func GetSleepTime(controller *CpuLoadController) time.Duration {
 	return controller.sleepTime
 }
 
-func GetCPUTarget(controller *CpuLoadController) float64{
+func GetCPUTarget(controller *CpuLoadController) float64 {
 	return controller.cpuTarget
 }
 
@@ -108,16 +106,15 @@ func SetCPUTarget(controller *CpuLoadController, target float64) {
 	controller.cpuTarget = target
 }
 
-func StartCpuLoadController(controller *CpuLoadController){
+func StartCpuLoadController(controller *CpuLoadController) {
 	controller.running = true
 	go runCpuLoadController(controller)
 }
-func StopCpuLoadController(controller *CpuLoadController){
+func StopCpuLoadController(controller *CpuLoadController) {
 	controller.running = false
 }
 
-
-func runCpuLoadController(controller *CpuLoadController){
+func runCpuLoadController(controller *CpuLoadController) {
 	// fmt.Printf("Running controller")
 	for controller.running {
 		time.Sleep(controller.samplingInterval)
@@ -127,7 +124,7 @@ func runCpuLoadController(controller *CpuLoadController){
 		timeNow := time.Now().Local()
 		samplingInterval := time.Since(controller.lastSampledTime)
 		// fmt.Printf( "new sample interval %s\n" ,samplingInterval.String())
-		controller.integralError += controller.proportionalError * float64(samplingInterval)/1000000000
+		controller.integralError += controller.proportionalError * float64(samplingInterval) / 1000000000
 		// fmt.Printf( "integral error %f\n" ,controller.integralError)
 		controller.lastSampledTime = timeNow
 		cal_sleep := (controller.proportionalConstant * controller.proportionalError) + (controller.integralConstant * controller.integralError)
@@ -137,7 +134,7 @@ func runCpuLoadController(controller *CpuLoadController){
 
 		if cal_sleep < 0 {
 			controller.sleepTime = 0
-			controller.integralError -= controller.proportionalError * float64(samplingInterval)/1000000000
+			controller.integralError -= controller.proportionalError * float64(samplingInterval) / 1000000000
 			// fmt.Println("integral error after correction %f" ,controller.integralError)
 		}
 	}
@@ -145,21 +142,20 @@ func runCpuLoadController(controller *CpuLoadController){
 
 // Actuator
 func RunCpuLoader(actuator *CpuLoadGenerator) time.Duration {
-	sleepTime := 1*time.Second
-	for time.Since(actuator.startTime) <= actuator.duration{
-		timeNow :=time.Now().Local()
+	sleepTime := 1 * time.Second
+	for time.Since(actuator.startTime) <= actuator.duration {
+		timeNow := time.Now().Local()
 		interval := 10 * time.Millisecond
 
-		for (time.Since(timeNow) < interval){
+		for time.Since(timeNow) < interval {
 			pr := 213123.0
 			pr *= pr
-			pr = + 1
+			pr = +1
 
 		}
 		SetCPU(actuator.controller, GetCPULoad(actuator.monitor))
 		sleepTime = GetSleepTime(actuator.controller)
 		time.Sleep(sleepTime) //controller actuation
-
 
 	}
 	return sleepTime
