@@ -59,8 +59,8 @@ OPTIONS:
    --cpucore "0"	Cpu core to stress
 ```
 ### Examples ###
-To load CPU core 1 to 50% for a duration of 10 seconds 
+To load CPU core 1 to 50% for a duration of 10 seconds
 
 ```
-$ ./stress cpu --cpuload 0.5 --duration 10 --cpu 0
+$ ./stress cpu --cpuload 0.5 --duration 10 --cpucore 0
 ```
