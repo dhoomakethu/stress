@@ -13,7 +13,6 @@ func getCommands() []cli.Command {
 	var cpuload float64
 	var duration float64
 	var cpucore int
-	var context *cli.Context
 	sampleInterval := 100 * time.Millisecond
 
 	cpuLoadFlags := []cli.Flag{
@@ -40,7 +39,6 @@ func getCommands() []cli.Command {
 		{
 			Name: "cpu",
 			Action: func(c *cli.Context) {
-				context = c
 				runCpuLoader(sampleInterval, cpuload, duration, cpucore)
 			},
 			Usage:  "load cpu , use --help for more options",
